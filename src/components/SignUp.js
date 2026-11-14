@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpider } from '@fortawesome/free-solid-svg-icons';
 
 const SignUp = () => {
+    const [email, setEmail] = useState('');
     const [username, setUserName] = useState('');
     const [password, setPassword] = useState('');
     const [profileImage, setProfileImage] = useState(null);
@@ -12,44 +13,37 @@ const SignUp = () => {
     
     const navigate = useNavigate();
 
-    const handleSignUp = async (e) => {
-        e.preventDefault();
+const handleSignUp = async (e) => {
+  e.preventDefault();
 
-        if(!username || !password || !profileImage){
-            alert("One or more fields are missing");
-            return;
-        }
+  try {
+    const response = await fetch('http://localhost:8080/api/users/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        bio: bio.trim(),
+      }),
+    });
 
-        const formData = new FormData();
-        formData.append('username', username);
-        formData.append('password', password);
-        formData.append('profileImage', profileImage);
-        formData.append('bio', bio);
+    if (response.status === 409) {
+      alert('That username or email is already registered.');
+      return;
+    }
 
-        try{
-            const response = await fetch('http://localhost:5000/signup', {
-                method:'POST',
-                body: formData,
-            });
+    if (!response.ok) {
+      alert(`Signup failed (HTTP ${response.status}).`);
+      return;
+    }
 
-            if(!response.ok){
-                throw new Error("Signup unsuccessful");
-            }
-
-            const data = await response.json();
-            console.log("Signup successful", data);
-
-            //reset signup form
-            setUserName('');
-            setPassword('');
-            setProfileImage(null);
-            setBio('');
-
-            navigate('/');
-        }catch(error){
-            console.log("Error:", error);
-        }
-}
+    alert('Account created. You can now log in.');
+    navigate('/');
+  } catch {
+    alert('Could not reach the API. Check that Spring Boot is running.');
+  }
+};
 
 //Render HTML Sign up form
     return(
@@ -65,6 +59,15 @@ const SignUp = () => {
                     onChange={(e) => setUserName(e.target.value)}>
                     </input>
                 </div>
+                <input
+                    type="email"
+                    name="email"
+                    aria-label="Email address"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                />
                 <div>
                     <input 
                     type="password" 
@@ -78,8 +81,7 @@ const SignUp = () => {
                     <label htmlFor="profile-image">Profile Image</label>
                     <input 
                     type="file" 
-                    placeholder="Upload Profile Image" 
-                    required 
+                    placeholder="Upload Profile Image"  
                     accept="image/*"
                     onChange={(e) => setProfileImage(e.target.files[0])}>
                     </input>

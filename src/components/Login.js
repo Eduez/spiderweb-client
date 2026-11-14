@@ -11,35 +11,33 @@ const Login = () => {
   const navigate = useNavigate();
 
   // Function to handle Login form submission 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      // Fetch users data from users.json file. Generally a request is sent to an API to retrieve user credentials from a database.
-      const response = await fetch('/users.json');
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError('');
 
-      // Check if the response is OK
-      if (!response.ok) {
-        throw new Error('Failed to fetch users data');
-      }
+  try {
+    const response = await fetch('http://localhost:8080/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
 
-      const users = await response.json();
-
-      // Username and password check for authentication
-      const user = users.find(
-        (user) => user.username === username && user.password === password
-      );
-
-      if (user) {
-        navigate('/home');
-        localStorage.setItem('currentUser', JSON.stringify(user)); // Save entire user object to localStorage
-      } else {
-        setError('Invalid username or password.');
-      }
-    } catch (err) {
-      console.error('Error fetching user data:', err);
-      setError('There was an error with the login process.');
+    if (response.status === 401) {
+      setError('Invalid username or password.');
+      return;
     }
-  };
+
+    if (!response.ok) {
+      setError(`Login failed (HTTP ${response.status}).`);
+      return;
+    }
+
+    localStorage.setItem('currentUser', JSON.stringify({ username }));
+    navigate('/home');
+  } catch {
+    setError('Could not reach the API. Check that Spring Boot is running.');
+  }
+};
 //Render HTML Login form
   return (
     <div class="login-container">
